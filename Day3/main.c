@@ -6,9 +6,35 @@
 FILE *finput;
 
 /* Day3 global vars */
+int *prev_numbers = NULL;
+int *prev_numbers_pos = NULL;
+int n_prev_numbers = 0;
 /* END: Day3 global vars */
 
 /* Day3 functions */
+int day_three(char *line)
+{
+  if (prev_numbers == NULL) {
+    int *prev_numbers = malloc(256 * sizeof(int));
+  }
+  if (prev_numbers_pos == NULL) {
+    int *prev_numbers_pos = malloc(256 * sizeof(int));
+  }
+
+  int n_digits = 0;
+  char *digits = malloc(256 * sizeof(char));
+  memset(digits, 0, 256);
+  while ((ch = *line++) != '\n') {
+    if ((ch-48) > 9 || (ch-48) < 0) {
+      if (ch != '.') { /* Anything not '.' and not number are symbols */
+      }
+    } else { /* In case of number */
+      digits[n_digits] = ch;
+      n_digits++;
+    }
+  }
+  return 0;
+}
 /* END: Day3 functions */
 
 void read_input(const char *prog_name, const char *filename)
@@ -32,6 +58,7 @@ void read_input(const char *prog_name, const char *filename)
     }
 
     /* specific to Day3 */
+    day_three(*lineptr);
     /* END: specific to Day3 */
   }
 
