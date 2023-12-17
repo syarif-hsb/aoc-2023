@@ -6,33 +6,117 @@
 FILE *finput;
 
 /* Day3 global vars */
-int *prev_numbers = NULL;
-int *prev_numbers_pos = NULL;
-int n_prev_numbers = 0;
+#define TABLE_WIDTH  140
+#define TABLE_LENGTH 140
+int part_bombs[TABLE_LENGTH][TABLE_WIDTH] = { 0 };
+int gear_bombs[TABLE_LENGTH][TABLE_WIDTH] = { 0 };
+char engine_visu[TABLE_LENGTH][TABLE_WIDTH + 1] = { '\0' };
+/* char **engine_visu; */
+/* uint_32t **part_bombs; */
+
+/* to keep track of the position */
+/* m: index to width */
+/* n: index to length */
+int mb = 0;
+int nb = 0;
+int gear_index = 0;
+int gear_last_index = 0;
 /* END: Day3 global vars */
 
 /* Day3 functions */
-int day_three(char *line)
+int calc_part_number()
 {
-  if (prev_numbers == NULL) {
-    int *prev_numbers = malloc(256 * sizeof(int));
-  }
-  if (prev_numbers_pos == NULL) {
-    int *prev_numbers_pos = malloc(256 * sizeof(int));
-  }
+  int total_part_number = 0;
+  int total_gear_number = 0;
 
-  int n_digits = 0;
-  char *digits = malloc(256 * sizeof(char));
-  memset(digits, 0, 256);
-  while ((ch = *line++) != '\n') {
-    if ((ch-48) > 9 || (ch-48) < 0) {
-      if (ch != '.') { /* Anything not '.' and not number are symbols */
+  int new_number_found = 0;
+  int new_number = 0;
+  int bomb_found = 0;
+  int gear_first_component = 0;
+  int gear_found = 0;
+
+  for (int i = 0; i < TABLE_LENGTH; i++) {
+    for (int j = 0; j < TABLE_WIDTH + 1; j++) {
+      /* printf("%s\n", *engine_visu+(i * (TABLE_WIDTH + 1) + j)); */
+      if (engine_visu[i][j] != '\0') {
+        if (!new_number_found) {
+          new_number_found = 1;
+          new_number = atoi(*engine_visu+
+              (i * (TABLE_WIDTH + 1) + j));
+        }
+        if (part_bombs[i][j] == 1)
+          bomb_found = 1;
+        if (gear_bombs[i][j])
+          gear_found = gear_bombs[i][j];
+      } else {
+        if (new_number_found) {
+          new_number_found = 0;
+          if (bomb_found) {
+            total_part_number += new_number;
+            printf("Part number found: %3d. Total: %d\n",
+                new_number, total_part_number);
+          }
+          if (gear_found) {
+            printf("Gear found: %d\n", gear_found);
+            if (gear_last_index == gear_found && gear_first_component) {
+              total_gear_number += gear_first_component * 
+                new_number;
+              gear_first_component = 0;
+            }
+            else {
+              gear_first_component = new_number;
+              gear_last_index = gear_found;
+            }
+          }
+        }
+        new_number = 0;
+        bomb_found = 0;
+        gear_found = 0;
       }
-    } else { /* In case of number */
-      digits[n_digits] = ch;
-      n_digits++;
     }
   }
+
+  return total_gear_number;
+}
+
+void set_bombs(int isGear, int i, int j)
+{
+  for (int ic = i - 1; ic <= i + 1; ic++) {
+
+    if (ic < 0 || ic > TABLE_LENGTH - 1)
+      continue;
+
+    for (int jc = j - 1; jc <= j + 1; jc++) {
+
+      if (jc < 0 || jc > TABLE_WIDTH - 1)
+        continue;
+
+      part_bombs[ic][jc] = 1;
+      gear_bombs[ic][jc] = isGear;
+    }
+  }
+
+  return;
+}
+
+int day_three(char *line)
+{
+  char ch;
+  for (mb = 0; (ch = *line) != '\n'; mb++, *line++) {
+    if ((ch-48) > 9 || (ch-48) < 0) {
+      if (ch != '.') { /* Anything not '.' and not number are symbols */
+        if (ch == '*') {
+          gear_index++;
+          set_bombs(gear_index, nb, mb);
+        }
+        else
+          set_bombs(0, nb, mb);
+      }
+    } else { /* In case of number */
+      engine_visu[nb][mb] = ch;
+    }
+  }
+
   return 0;
 }
 /* END: Day3 functions */
@@ -55,10 +139,15 @@ void read_input(const char *prog_name, const char *filename)
     st = getline(lineptr, n, finput);
     if (st == -1) {
       break;
+
+      /* specific to Day3 */
+      mb = 0;
+      /* END: specific to Day3 */
     }
 
     /* specific to Day3 */
     day_three(*lineptr);
+    nb++;
     /* END: specific to Day3 */
   }
 
@@ -71,5 +160,48 @@ int main(int argc, char** argv)
   read_input(argv[0], "input.txt");
 
   fclose(finput);
+
+  /* for (int i = 0; i < TABLE_LENGTH; i++) { */
+  /*   for (int j = 0; j < TABLE_LENGTH; j++) { */
+  /*     printf("%d", part_bombs[i][j]); */
+  /*   } */
+  /*   printf("\n"); */
+  /* } */
+  /* printf("\n"); */
+  /* for (int i = 0; i < TABLE_LENGTH; i++) { */
+  /*   for (int j = 0; j < TABLE_LENGTH; j++) { */
+  /*     if (engine_visu[i][j] != '\0') */
+  /*       printf("%c", engine_visu[i][j]); */
+  /*     else */
+  /*       printf("."); */
+  /*   } */
+  /*   printf("\n"); */
+  /* } */
+
+  for (int i = 0; i < TABLE_LENGTH; i++) {
+    for (int j = 0; j < TABLE_LENGTH; j++) {
+      printf("%d", gear_bombs[i][j]);
+    }
+    printf("\n");
+    for (int j = 0; j < TABLE_LENGTH; j++) {
+      if (engine_visu[i][j] != '\0')
+        printf("%c", engine_visu[i][j]);
+      else
+        printf(".");
+    }
+    printf("\n");
+    printf("--\n");
+  }
+  /* for (int i = 0; i < TABLE_LENGTH; i++) { */
+  /*   for (int j = 0; j < TABLE_LENGTH; j++) { */
+  /*     if (engine_visu[i][j] != '\0') */
+  /*       printf("%c", engine_visu[i][j]); */
+  /*     else */
+  /*       printf("."); */
+  /*   } */
+  /*   printf("\n"); */
+  /* } */
+
+  printf("The total is: %d\n", calc_part_number());
   return 0;
 }
