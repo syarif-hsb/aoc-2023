@@ -32,8 +32,11 @@ int calc_part_number()
   int new_number_found = 0;
   int new_number = 0;
   int bomb_found = 0;
-  int gear_first_component = 0;
+  /* int gear_first_component = 0; */
+  int gear_collection[1024] = { 0 };
+  int gear_first_component[1024] = { 0 };
   int gear_found = 0;
+  int gear_found_index = 0;
 
   for (int i = 0; i < TABLE_LENGTH; i++) {
     for (int j = 0; j < TABLE_WIDTH + 1; j++) {
@@ -46,27 +49,35 @@ int calc_part_number()
         }
         if (part_bombs[i][j] == 1)
           bomb_found = 1;
-        if (gear_bombs[i][j])
+        if (gear_bombs[i][j]) {
           gear_found = gear_bombs[i][j];
+        }
       } else {
         if (new_number_found) {
           new_number_found = 0;
           if (bomb_found) {
             total_part_number += new_number;
-            printf("Part number found: %3d. Total: %d\n",
-                new_number, total_part_number);
           }
           if (gear_found) {
-            printf("Gear found: %d\n", gear_found);
-            if (gear_last_index == gear_found && gear_first_component) {
-              total_gear_number += gear_first_component * 
-                new_number;
-              gear_first_component = 0;
+            gear_collection[gear_found_index] = gear_found;
+            gear_first_component[gear_found_index++] = new_number;
+            printf("Gear found: %d\t%d\n", gear_found, new_number);
+            for (int x = 0; x < 1024; x++) {
+              if (gear_collection[x] == gear_found && 
+                  x != gear_found_index - 1) {
+                total_gear_number += gear_first_component[x] * 
+                  new_number;
+                printf("Gear complete: %d. Total: %d\n",
+                    new_number * gear_first_component[x], 
+                    total_gear_number);
+                break;
+              }
             }
-            else {
-              gear_first_component = new_number;
-              gear_last_index = gear_found;
-            }
+            /* gear_first_component = 0; */
+          }
+          else {
+            /* gear_first_component = new_number; */
+            gear_last_index = gear_found;
           }
         }
         new_number = 0;
@@ -178,20 +189,20 @@ int main(int argc, char** argv)
   /*   printf("\n"); */
   /* } */
 
-  for (int i = 0; i < TABLE_LENGTH; i++) {
-    for (int j = 0; j < TABLE_LENGTH; j++) {
-      printf("%d", gear_bombs[i][j]);
-    }
-    printf("\n");
-    for (int j = 0; j < TABLE_LENGTH; j++) {
-      if (engine_visu[i][j] != '\0')
-        printf("%c", engine_visu[i][j]);
-      else
-        printf(".");
-    }
-    printf("\n");
-    printf("--\n");
-  }
+  /* for (int i = 0; i < TABLE_LENGTH; i++) { */
+  /*   for (int j = 0; j < TABLE_LENGTH; j++) { */
+  /*     printf("%d", gear_bombs[i][j]); */
+  /*   } */
+  /*   printf("\n"); */
+  /*   for (int j = 0; j < TABLE_LENGTH; j++) { */
+  /*     if (engine_visu[i][j] != '\0') */
+  /*       printf("%c", engine_visu[i][j]); */
+  /*     else */
+  /*       printf("."); */
+  /*   } */
+  /*   printf("\n"); */
+  /*   printf("--\n"); */
+  /* } */
   /* for (int i = 0; i < TABLE_LENGTH; i++) { */
   /*   for (int j = 0; j < TABLE_LENGTH; j++) { */
   /*     if (engine_visu[i][j] != '\0') */
