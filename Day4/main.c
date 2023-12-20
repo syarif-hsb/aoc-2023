@@ -7,6 +7,8 @@ FILE *finput;
 
 /* Day4 global vars */
 int total_points = 0;
+int total_matchcards = 0;
+int *matchcards_stacks;
 /* END: Day4 global vars */
 
 /* Day4 functions */
@@ -30,13 +32,22 @@ int day_four_question(char *line)
   int **cards;
   int *ncards;
   int i, j;
+  int card_id;
+
+  if (!matchcards_stacks)
+    matchcards_stacks = calloc(256, sizeof(int));
+
   for (i = 0, str1 = line; ; i++, str1 = NULL) {
     token = strtok_r(str1, delim_token, &saveptr1);
     if (token == NULL)
       break;
-    if (!i)
-      continue;
-    printf("Token main: %s\n", token);
+    if (i == 0) {
+      subtoken = strtok_r(token, delim_subtoken, &saveptr2);
+      subtoken = strtok_r(NULL, delim_subtoken, &saveptr2);
+      card_id = atoi(subtoken);
+    }
+    /* printf("Token main: %s\n", token); */
+    /* printf("Card ID: %d\n", card_id); */
 
     if (i == 1) {
       cards = &winning_cards;
@@ -60,9 +71,11 @@ int day_four_question(char *line)
   }
 
   int points = 0;
+  int copies = 0;
   for (i = 0; i <= n_my_cards; i++) {
     for (j = 0; j <= n_winning_cards; j++) {
       if (winning_cards[j] == my_cards[i]) {
+        copies++;
         if (!points)
           points = 1;
         else
@@ -71,7 +84,11 @@ int day_four_question(char *line)
     }
   }
 
-  printf("Points: %d\n", points);
+  printf("Copies: %d\n", copies);
+  matchcards_stacks[card_id - 1] += 1;
+  for (i = card_id; copies > 0; copies--)
+    matchcards_stacks[i++] += matchcards_stacks[card_id - 1];
+
   total_points += points;
 
   free(winning_cards);
@@ -114,7 +131,15 @@ int main(int argc, char** argv)
 
   fclose(finput);
 
+  printf("Matches: ");
+  for (int i = 0; i < 256; i++) {
+    printf("%d ", matchcards_stacks[i]);
+    total_matchcards += matchcards_stacks[i];
+  }
+  printf("\n");
+
   printf("Total points: %d\n", total_points);
+  printf("Total match cards: %d\n", total_matchcards);
 
   return 0;
 }
