@@ -22,6 +22,9 @@ int seedFlag = 0;
 /* Day4 functions */
 int parse_numbers(char *s, int *cat1, int *cat2)
 {
+  int dest_start, source_start;
+  int range;
+
   const char *delim_token = " \n";
   char *str, *token;
   int i;
@@ -30,6 +33,17 @@ int parse_numbers(char *s, int *cat1, int *cat2)
     if (token == NULL)
       break;
 
+    switch(i) {
+      case 0:
+        dest_start = atoi(token);
+        break;
+      case 1:
+        source_start = atoi(token);
+        break;
+      case 2:
+        range = atoi(token);
+        break;
+    }
     printf("%#2d ", atoi(token));
   }
   printf("\n");
