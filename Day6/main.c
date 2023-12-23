@@ -7,48 +7,171 @@
 FILE *finput;
 
 /* Day4 global vars */
-int time[16] = { 0 };
-int dist[16] = { 0 };
-uint64_t time_concatenated = 0;
-uint64_t dist_concatenated = 0;
-char *str_time_concatenated;
-char *str_dist_concatenated;
-int n_of_time = 0;
-int spd_per_chg = 1;
+struct Hand {
+  char *card;
+  int value;
+};
+
+enum { 
+  HighCard, 
+  OnePair, 
+  TwoPair, 
+  ThreeOfAKind, 
+  FullHouse, 
+  FourOfAKind, 
+  FiveOfAKind };
+
+enum {
+  Ten = 10,
+  Jack,
+  Queen,
+  King,
+  As,
+};
+
+struct Hand *hand_collection;
+int *hand_values;
+int n_hand;
+int n_values;
+int j_as_joker = 0;
 /* END: Day4 global vars */
 
 /* Day4 functions */
-int day_six(char *line)
+static int
+card_power(const char c)
 {
-  /* printf("%s", line); */
-  int *arr = NULL;
-  int n = 0;
-  char *str_concat = NULL;
-  const char *delim_token = ": \n";
+  switch (c) {
+    case 'A':
+      return As;
+    case 'J':
+      if (j_as_joker)
+        return 1;
+      else
+        return Jack;
+    case 'Q':
+      return Queen;
+    case 'K':
+      return King;
+    case 'T':
+      return Ten;
+    default:
+      return c-48;
+  }
 
+  return -1;
+}
+
+static int
+get_hand_power(const char *hand)
+{
+  char type1 = '\0';
+  char type2 = '\0';
+  char type3 = '\0';
+  char type4 = '\0';
+  int n_type1 = 0;
+  int n_type2 = 0;
+  int n_type3 = 0;
+  int n_type4 = 0;
+  int j_cards = 0;
+
+  for (int i = 0; i < 5; i++) {
+    if (hand[i] == 'J')
+      j_cards++;
+    else if (hand[i] == type1)
+      n_type1++;
+    else if (hand[i] == type2)
+      n_type2++;
+    else if (hand[i] == type3)
+      n_type3++;
+    else if (hand[i] == type4)
+      n_type4++;
+    else if (!type1) {
+      type1 = hand[i];
+      n_type1++;
+    } else if (!type2) {
+      type2 = hand[i];
+      n_type2++;
+    } else if (!type3) {
+      type3 = hand[i];
+      n_type3++;
+    } else if (!type4) {
+      type4 = hand[i];
+      n_type4++;
+    }
+  }
+
+  if (j_as_joker) {
+    int *max_type;
+    max_type = &n_type1;
+    if (n_type2 > *max_type)
+      max_type = &n_type2;
+    if (n_type3 > *max_type)
+      max_type = &n_type3;
+    if (n_type4 > *max_type)
+      max_type = &n_type4;
+
+    *max_type = j_cards + *max_type;
+  }
+
+  if (n_type1 == 5)
+    return FiveOfAKind;
+  else if (n_type1 == 4 || n_type2 == 4)
+    return FourOfAKind;
+  else if (n_type1 == 3 || n_type2 == 3 || n_type3 == 3)
+    if ((n_type1 * n_type2 * n_type3))
+      return ThreeOfAKind;
+    else
+      return FullHouse;
+  else if (n_type1 == 2 || n_type2 == 2 || n_type3 == 2)
+    if (!n_type4)
+      return TwoPair;
+    else
+      return OnePair;
+  else if (n_type1 == 1 || n_type2 == 1 || n_type3 == 1)
+    if (n_type4 == 2)
+      return OnePair;
+    else
+      return HighCard;
+}
+
+static int
+cmp_each_card(const char *s1, const char *s2)
+{
+  for (int i = 0; i < 5; i++) {
+    if (card_power(s1[i]) != card_power(s2[i]))
+      return card_power(s1[i]) - card_power(s2[i]);
+  }
+
+  return 0;
+}
+
+static int
+cmp_hand(const void *h1, const void *h2)
+{
+  char *s1 = (*(struct Hand *)h1).card;
+  char *s2 = (*(struct Hand *)h2).card;
+  if (get_hand_power(s1) == get_hand_power(s2))
+    return cmp_each_card(s1, s2);
+  else
+    return get_hand_power(s1) - get_hand_power(s2);
+}
+
+int read_line(char *line)
+{
+
+  int j;
   char *str, *token;
-  int i, j;
-  for (i = 0, str = line; ; i++, str = NULL) {
+  const char *delim_token = " \n";
+  for (j = 0, str = line; ; j++, str = NULL) {
     token = strtok(str, delim_token);
-    if (token == NULL) {
-      arr = NULL;
-      str_concat = NULL;
-      n_of_time = n;
-      n = 0;
+    if (token == NULL)
       break;
-    }
 
-    /* printf("%s\n", token); */
-    if (!strcmp(token, "Time")) {
-      arr = time;
-      str_concat = str_time_concatenated;
-    } else if (!strcmp(token, "Distance")) {
-      arr = dist;
-      str_concat = str_dist_concatenated;
-    } else {
-      arr[n++] = atoi(token);
-      strcat(str_concat, token);
+    if (!j) {
+      hand_collection[n_hand++].card = strdup(token);
     }
+    else
+      hand_collection[n_values++].value = atoi(token);
   }
 
   return 0;
@@ -75,7 +198,8 @@ void read_input(const char *prog_name, const char *filename)
       break;
 
     /* specific to Day4 */
-    day_six(*lineptr);
+    /* day_seven(*lineptr); */
+    read_line(*lineptr);
     /* END: specific to Day4 */
   }
 
@@ -85,74 +209,34 @@ void read_input(const char *prog_name, const char *filename)
 
 int main(int argc, char** argv)
 {
-  str_time_concatenated = calloc(32, sizeof(char));
-  str_dist_concatenated = calloc(32, sizeof(char));
+  hand_collection = malloc(1024 * sizeof(struct Hand));
+  hand_values = calloc(1024, sizeof(int));
+
   read_input(argv[0], "input.txt");
 
   fclose(finput);
 
-  uint64_t dist_achv = 0;
-  int pow_poss = 0;
-  uint64_t possibilities = 0;
-  for (int i = 0; i < n_of_time; i++) {
-    printf("Distance: %d\n", dist[i]);
-    for (int j = 0; j <= time[i]; j++) {
-      dist_achv = (time[i] - j) * (spd_per_chg * j);
-      printf("Distance achieved: %d\n", dist_achv);
-      if (dist_achv > dist[i])
-        possibilities++;
-    }
-    printf("Possibility: %d\n", possibilities);
+  qsort(hand_collection, n_hand, sizeof(struct Hand), cmp_hand);
 
-    if (!pow_poss)
-      pow_poss = possibilities;
-    else
-      pow_poss *= possibilities;
-
-    possibilities = 0;
+  uint64_t total_values = 0;
+  for (int i = 0; i < n_values; i++) {
+    /* printf("Card: %s. Value: %d. Rank: %d\n", */ 
+        /* hand_collection[i].card, hand_collection[i].value, i + 1); */
+    total_values += hand_collection[i].value * (i + 1);
   }
 
-  printf("Power of possibilities: %d\n", pow_poss);
+  printf("Total Values: %lu\n", total_values);
 
-  time_concatenated = atoll(str_time_concatenated);
-  dist_concatenated = atoll(str_dist_concatenated);
-  printf("Str time: %s\n", str_time_concatenated);
-  printf("Num time: %lu\n", time_concatenated);
-  printf("Str dist: %s\n", str_dist_concatenated);
-  printf("Num dist: %lu\n", dist_concatenated);
+  j_as_joker = 1;
+  qsort(hand_collection, n_hand, sizeof(struct Hand), cmp_hand);
 
-  uint64_t not_possible = 0;
-  for (uint64_t i = 0; i <= time_concatenated; i++) {
-    dist_achv = (time_concatenated - i) * (spd_per_chg * i);
-    if (dist_achv > dist_concatenated)
-    {
-      /* printf("Time: %d. Distance achieved: %lu\n", i, dist_achv); */
-      possibilities++;
-    }
-    if (dist_achv > 0xffffffffffffff) {
-      /* printf("Time: %d. Distance achieved: %lu. Possibilities: %d\n", i, dist_achv, possibilities); */
-      possibilities += (time_concatenated - 2 * i);
-      i = time_concatenated - i;
-    }
-    /* if (i < 50) */
-    /* printf("Time: %d. Distance achieved: %lu. Possibilities: %lu\n", i, dist_achv, possibilities); */
+  total_values = 0;
+  for (int i = 0; i < n_values; i++) {
+    /* printf("Card: %s. Value: %d. Rank: %d\n", */ 
+        /* hand_collection[i].card, hand_collection[i].value, i + 1); */
+    total_values += hand_collection[i].value * (i + 1);
   }
 
-  for (uint64_t i = 0; i <= time_concatenated; i++) {
-    dist_achv = (time_concatenated - i) * (spd_per_chg * i);
-    if (dist_achv > dist_concatenated)
-    {
-      printf("Time: %d. Distance achieved: %lu\n", i, dist_achv);
-      break;
-    }
-    else
-      not_possible++;
-  }
-
-
-  printf("Possibility concatenated: %llu\n", possibilities);
-  printf("Possibility concatenated method2: %llu\n", 
-      (time_concatenated + 1) - not_possible * 2);
-
+  printf("Total Values Joker: %lu\n", total_values);
   return 0;
 }
