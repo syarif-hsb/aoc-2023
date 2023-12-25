@@ -8,14 +8,16 @@ FILE *finput;
 
 /* Day4 global vars */
 /* The worst AOC so far XD */
-#define MAZE_LENGTH 10
-#define MAZE_WIDTH  20
+#define MAZE_LENGTH 140
+#define MAZE_WIDTH  140
 int32_t dist_table[MAZE_LENGTH][MAZE_WIDTH];
 char direction_map[MAZE_LENGTH][MAZE_WIDTH];
 size_t n_row = 0;
 int cur_pos[2]; /* i, j */
 int init_pos[2]; /* i, j */
 int steps;
+int right_is_outside = 0;
+int left_is_outside = 0;
 
 enum {
   Initial,
@@ -87,10 +89,26 @@ int dir_table(char c)
 
 void mark_left_right(int right, int i, int j)
 {
-  if (right)
-    dist_table[i][j] -= 1;
-  else
-    dist_table[i][j] -= 2;
+  if (i < 0 || i > MAZE_LENGTH - 1 || j < 0 || j > MAZE_WIDTH - 1)
+    return;
+
+  if (!right_is_outside && !left_is_outside) {
+    if (dist_table[i][j] == -2) {
+      if (right) {
+        right_is_outside = 1;
+      } else {
+        left_is_outside = 1;
+      }
+    }
+  } else {
+    if (dist_table[i][j] != -1)
+      return;
+
+    if (right)
+      dist_table[i][j] -= right_is_outside;
+    else
+      dist_table[i][j] -= left_is_outside;
+  }
 
   return;
 }
@@ -445,15 +463,27 @@ S_found:
   dist_table[0][MAZE_WIDTH - 1] += 1;
   dist_table[MAZE_LENGTH - 1][MAZE_WIDTH - 1] += 1;
 
-  int result2 = 0;
-  for (int i = 0; i < MAZE_LENGTH; i++) {
-    for (int j = 0; j < MAZE_WIDTH; j++) {
-      if (dist_table[i][j] == -1)
-        result2++;
+  int dir;
+  cur_pos[0] = init_pos[0];
+  cur_pos[1] = init_pos[1];
+  for (int i = 0; i < 4; i++) {
+    if (analyze_value(Top + i)) {
+      dir = Top + i;
+      steps = 0;
+      numbering_table();
+      dir = move_one_tile(dir, 0);
+      i = 4;
+    }
+    printf("Debug. i: %d\n", Top + i);
+    while (direction_map[cur_pos[0]][cur_pos[1]] != 'S') {
+      dir = move_one_tile(dir, 0);
+      if (right_is_outside || left_is_outside)
+        goto Outside_found;
     }
   }
 
-  int dir;
+Outside_found:
+
   cur_pos[0] = init_pos[0];
   cur_pos[1] = init_pos[1];
   for (int i = 0; i < 4; i++) {
@@ -470,18 +500,13 @@ S_found:
     }
   }
 
-  /* for (int i = 0; i < 4; i++) { */
-  /*   if (analyze_value(Top + i)) { */
-  /*     dir = Top + i; */
-  /*     steps = 0; */
-  /*     numbering_table(); */
-  /*     dir = move_one_tile(dir, -1); */
-  /*     i = 4; */
-  /*   } */
-  /*   while (direction_map[cur_pos[0]][cur_pos[1]] != 'S') { */
-  /*     dir = move_one_tile(dir, -1); */
-  /*   } */
-  /* } */
+  int result2 = 0;
+  for (int i = 0; i < MAZE_LENGTH; i++) {
+    for (int j = 0; j < MAZE_WIDTH; j++) {
+      if (dist_table[i][j] == -1)
+        result2++;
+    }
+  }
 
   printf("Enclosed number of cells: %d\n", result2);
 
